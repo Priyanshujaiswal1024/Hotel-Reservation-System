@@ -18,11 +18,16 @@ public class ReservationService {
             System.out.print("Enter contact number: ");
             String contactNumber = scanner.next();
 
-            String sql = "INSERT INTO reservations ( guest_name, room_number, contact_number) " +
-                    "VALUES ('" + guestName + "', " + roomNumber + ", '" + contactNumber + "')";
+//            String sql = "INSERT INTO reservations ( guest_name, room_number, contact_number) " +
+//                    "VALUES ('" + guestName + "', " + roomNumber + ", '" + contactNumber + "')";
 
-            try (Statement statement = connection.createStatement()) {
-                int affectedRows = statement.executeUpdate(sql);
+            String sql ="Insert into  reservations ( guest_name, room_number, contact_number) values(?,?,?) ";
+            try (PreparedStatement ps = connection.prepareStatement(sql))
+            {
+                ps.setString(1, guestName);
+                ps.setInt(2, roomNumber);
+                ps.setString(3, contactNumber);
+                int affectedRows = ps.executeUpdate();
 
                 if (affectedRows > 0) {
                     System.out.println("Reservation successful!");
@@ -37,8 +42,8 @@ public class ReservationService {
     public static void viewReservations(Connection connection) throws SQLException {
         String sql = "SELECT reservation_id, guest_name, room_number, contact_number, reservation_date FROM reservations";
 
-        try (Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(sql)) {
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet resultSet = ps.executeQuery() ){
 
             System.out.println("Current Reservations:");
             System.out.println("+----------------+-----------------+---------------+----------------------+-------------------------+");
@@ -67,24 +72,26 @@ public class ReservationService {
             System.out.print("Enter guest name: ");
             String guestName = scanner.next();
 
-            String sql = "SELECT room_number FROM reservations " +
-                    "WHERE reservation_id = " + reservationId +
-                    " AND guest_name = '" + guestName + "'";
+            String sql = "select room_number from reservations where reservation_id=? and guest_name=?";
 
-            try (Statement statement = connection.createStatement();
-                 ResultSet resultSet = statement.executeQuery(sql)) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, reservationId);
+                ps.setString(2, guestName);
+                try (ResultSet resultSet = ps.executeQuery()) {
 
-                if (resultSet.next()) {
-                    int roomNumber = resultSet.getInt("room_number");
-                    System.out.println("Room number for Reservation ID " + reservationId +
-                            " and Guest " + guestName + " is: " + roomNumber);
-                } else {
-                    System.out.println("Reservation not found for the given ID and guest name.");
+                    if (resultSet.next()) {
+                        int roomNumber = resultSet.getInt("room_number");
+                        System.out.println("Room number for Reservation ID " + reservationId +
+                                " and Guest " + guestName + " is: " + roomNumber);
+                    } else {
+                        System.out.println("Reservation not found for the given ID and guest name.");
+                    }
                 }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+
     }
     public static void updateReservation(Connection connection, Scanner scanner) {
         try {
@@ -104,13 +111,14 @@ public class ReservationService {
             System.out.print("Enter new contact number: ");
             String newContactNumber = scanner.next();
 
-            String sql = "UPDATE reservations SET guest_name = '" + newGuestName + "', " +
-                    "room_number = " + newRoomNumber + ", " +
-                    "contact_number = '" + newContactNumber + "' " +
-                    "WHERE reservation_id = " + reservationId;
+            String sql=" update reservations set guest_name=?, room_number=?, contact_number=? where reservation_id=?";
 
-            try (Statement statement = connection.createStatement()) {
-                int affectedRows = statement.executeUpdate(sql);
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, newGuestName);
+                ps.setInt(2, newRoomNumber);
+                ps.setString(3, newContactNumber);
+                ps.setInt(4, reservationId);
+                int affectedRows = ps.executeUpdate();
 
                 if (affectedRows > 0) {
                     System.out.println("Reservation updated successfully!");
@@ -133,10 +141,11 @@ public class ReservationService {
                 return;
             }
 
-            String sql = "DELETE FROM reservations WHERE reservation_id = " + reservationId;
+            String sql = "DELETE FROM reservations WHERE reservation_id = ?" ;
 
-            try (Statement statement = connection.createStatement()) {
-                int affectedRows = statement.executeUpdate(sql);
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, reservationId);
+                int affectedRows = ps.executeUpdate();
 
                 if (affectedRows > 0) {
                     System.out.println("Reservation deleted successfully!");
@@ -151,12 +160,16 @@ public class ReservationService {
 
     public static boolean reservationExists(Connection connection, int reservationId) {
         try {
-            String sql = "SELECT reservation_id FROM reservations WHERE reservation_id = " + reservationId;
+            String sql = "SELECT reservation_id FROM reservations WHERE reservation_id = ?";
 
-            try (Statement statement = connection.createStatement();
-                 ResultSet resultSet = statement.executeQuery(sql)) {
+            try (PreparedStatement ps = connection.prepareStatement(sql))
 
-                return resultSet.next(); // If there's a result, the reservation exists
+                    {
+                        ps.setInt(1, reservationId);
+
+                        try (ResultSet resultSet = ps.executeQuery()) {
+                            return resultSet.next();
+                        }// If there's a result, the reservation exists
             }
         } catch (SQLException e) {
             e.printStackTrace();
