@@ -10,6 +10,7 @@ import java.util.Scanner;
 public class ReservationService {
     public static void reserveRoom(Connection connection, Scanner scanner) {
         try {
+            connection.setAutoCommit(false);
             System.out.print("Enter guest name: ");
             String guestName = scanner.next();
             scanner.nextLine();
@@ -17,9 +18,6 @@ public class ReservationService {
             int roomNumber = scanner.nextInt();
             System.out.print("Enter contact number: ");
             String contactNumber = scanner.next();
-
-//            String sql = "INSERT INTO reservations ( guest_name, room_number, contact_number) " +
-//                    "VALUES ('" + guestName + "', " + roomNumber + ", '" + contactNumber + "')";
 
             String sql ="Insert into  reservations ( guest_name, room_number, contact_number) values(?,?,?) ";
             try (PreparedStatement ps = connection.prepareStatement(sql))
@@ -30,13 +28,28 @@ public class ReservationService {
                 int affectedRows = ps.executeUpdate();
 
                 if (affectedRows > 0) {
+                    connection.commit();
                     System.out.println("Reservation successful!");
                 } else {
+                    connection.rollback();
                     System.out.println("Reservation failed.");
                 }
             }
         } catch (SQLException e) {
+            try
+            {
+                connection.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
             e.printStackTrace();
+        }
+        finally {
+            try {
+                connection.setAutoCommit(true);
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
         }
     }
     public static void viewReservations(Connection connection) throws SQLException {
@@ -64,9 +77,11 @@ public class ReservationService {
 
             System.out.println("+----------------+-----------------+---------------+----------------------+-------------------------+");
         }
+
     }
     public static void getRoomNumber(Connection connection, Scanner scanner) {
         try {
+
             System.out.print("Enter reservation ID: ");
             int reservationId = scanner.nextInt();
             System.out.print("Enter guest name: ");
@@ -95,6 +110,7 @@ public class ReservationService {
     }
     public static void updateReservation(Connection connection, Scanner scanner) {
         try {
+
             System.out.print("Enter reservation ID to update: ");
             int reservationId = scanner.nextInt();
             scanner.nextLine(); // Consume the newline character
@@ -103,7 +119,7 @@ public class ReservationService {
                 System.out.println("Reservation not found for the given ID.");
                 return;
             }
-
+            connection.setAutoCommit(false);
             System.out.print("Enter new guest name: ");
             String newGuestName = scanner.nextLine();
             System.out.print("Enter new room number: ");
@@ -121,13 +137,32 @@ public class ReservationService {
                 int affectedRows = ps.executeUpdate();
 
                 if (affectedRows > 0) {
+                    connection.commit();
                     System.out.println("Reservation updated successfully!");
                 } else {
+                    connection.rollback();
                     System.out.println("Reservation update failed.");
                 }
             }
         } catch (SQLException e) {
+            try
+            {
+                connection.rollback();
+                System.out.println("Rolled Back. update failed.");
+
+            }
+            catch ( SQLException ex)
+            {
+                ex.printStackTrace();
+            }
             e.printStackTrace();
+        }
+        finally {
+            try {
+                connection.setAutoCommit(true);
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -140,7 +175,7 @@ public class ReservationService {
                 System.out.println("Reservation not found for the given ID.");
                 return;
             }
-
+                connection.setAutoCommit(false);
             String sql = "DELETE FROM reservations WHERE reservation_id = ?" ;
 
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -148,13 +183,31 @@ public class ReservationService {
                 int affectedRows = ps.executeUpdate();
 
                 if (affectedRows > 0) {
+                    connection.commit();
                     System.out.println("Reservation deleted successfully!");
                 } else {
+                    connection.rollback();
                     System.out.println("Reservation deletion failed.");
                 }
             }
         } catch (SQLException e) {
+            try
+            {
+                connection.rollback();
+                System.out.println("Rolled Back. update failed.");
+            }
+            catch ( SQLException ex)
+            {
+                    ex.printStackTrace();
+            }
             e.printStackTrace();
+        }
+        finally {
+            try {
+                connection.setAutoCommit(true);
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
