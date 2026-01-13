@@ -10,7 +10,7 @@ import java.util.Scanner;
 public class ReservationService {
     public static void reserveRoom(Connection connection, Scanner scanner) {
         try {
-            connection.setAutoCommit(false);
+
             System.out.print("Enter guest name: ");
             String guestName = scanner.next();
             scanner.nextLine();
@@ -18,7 +18,11 @@ public class ReservationService {
             int roomNumber = scanner.nextInt();
             System.out.print("Enter contact number: ");
             String contactNumber = scanner.next();
-
+            if (!isRoomAvailable(connection, roomNumber)) {
+                System.out.println("Room already booked. Please choose another room.");
+                return;
+            }
+            connection.setAutoCommit(false);
             String sql ="Insert into  reservations ( guest_name, room_number, contact_number) values(?,?,?) ";
             try (PreparedStatement ps = connection.prepareStatement(sql))
             {
@@ -241,5 +245,23 @@ public class ReservationService {
         }
         System.out.println();
         System.out.println("ThankYou For Using Hotel Reservation System!!!");
+    }
+    public static boolean isRoomAvailable(Connection connection, int roomNumber) {
+        String sql = "SELECT 1 FROM reservations WHERE room_number=?";
+            try (PreparedStatement ps= connection.prepareStatement(sql)) {
+                ps.setInt(1, roomNumber);
+
+                try (ResultSet resultSet = ps.executeQuery()) {
+                    if (resultSet.next()) {
+                        return false;
+                    }
+                    else {
+                        return true;
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return false;
+            }
     }
 }
